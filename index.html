@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time Tracker</title>
+<style>
+:root {
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-card: #1f2b47;
+  --bg-input: #0f1629;
+  --text-primary: #e8e8f0;
+  --text-secondary: #8892a4;
+  --text-muted: #5a6478;
+  --accent: #4f8cff;
+  --accent-hover: #6da0ff;
+  --danger: #ff4757;
+  --danger-hover: #ff6b7a;
+  --success: #2ed573;
+  --border: #2a3550;
+  --shadow: 0 4px 24px rgba(0,0,0,0.3);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.2);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px 16px;
+}
+
+/* Header */
+.app-header {
+  text-align: center;
+  padding: 24px 0 16px;
+}
+.app-header h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--accent), #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Timer input bar */
+.timer-bar {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+}
+.timer-bar-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.task-input {
+  flex: 1;
+  min-width: 150px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.task-input:focus {
+  border-color: var(--accent);
+}
+.task-input::placeholder { color: var(--text-muted); }
+
+/* Project selector */
+.project-select-wrap {
+  position: relative;
+  min-width: 140px;
+}
+.project-select-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  width: 100%;
+  transition: border-color var(--transition);
+}
+.project-select-btn:hover { border-color: var(--accent); }
+.project-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.project-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  z-index: 100;
+  display: none;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.project-dropdown.open { display: block; animation: fadeSlideIn 0.15s ease; }
+.project-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background var(--transition);
+}
+.project-option:hover { background: rgba(79,140,255,0.1); }
+.project-add-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+.project-add-row input[type="text"] {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  outline: none;
+}
+.project-add-row input[type="color"] {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: none;
+  padding: 0;
+}
+.project-add-row button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background var(--transition);
+}
+.project-add-row button:hover { background: var(--accent-hover); }
+
+/* Sound controls */
+.controls-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.sound-btns {
+  display: flex;
+  gap: 4px;
+}
+.sound-btn {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.sound-btn.active {
+  background: rgba(79,140,255,0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.sound-btn:hover { border-color: var(--accent); }
+.volume-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.volume-wrap label { font-size: 0.78rem; color: var(--text-muted); }
+.volume-slider {
+  -webkit-appearance: none;
+  width: 80px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+}
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+/* Start/Stop button */
+.start-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 24px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.start-btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
+.start-btn.running {
+  background: var(--danger);
+}
+.start-btn.running:hover { background: var(--danger-hover); }
+
+/* Timer display */
+.timer-display {
+  text-align: center;
+  padding: 32px 0 24px;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.4s ease;
+  pointer-events: none;
+  height: 0;
+  overflow: hidden;
+}
+.timer-display.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  height: auto;
+  padding: 32px 0 24px;
+}
+.timer-time {
+  font-size: 3.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  text-shadow: 0 0 40px rgba(79,140,255,0.3);
+}
+.timer-task-label {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* Entries */
+.entries-section { margin-top: 8px; }
+.day-group {
+  margin-bottom: 20px;
+  animation: fadeSlideIn 0.3s ease;
+}
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 4px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.day-header-date {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.day-header-total {
+  font-size: 0.85rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+.entry {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all var(--transition);
+  animation: fadeSlideIn 0.3s ease;
+}
+.entry:hover {
+  border-color: rgba(79,140,255,0.3);
+  box-shadow: var(--shadow-sm);
+}
+.entry-project-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.entry-info {
+  flex: 1;
+  min-width: 0;
+}
+.entry-task {
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.entry-project-name {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.entry-times {
+  text-align: right;
+  flex-shrink: 0;
+}
+.entry-duration {
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.entry-range {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.entry-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.entry-play {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all var(--transition);
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.entry-play:hover {
+  color: var(--success);
+  background: rgba(46,213,115,0.1);
+}
+.entry-delete {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all var(--transition);
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.entry-delete:hover {
+  color: var(--danger);
+  background: rgba(255,71,87,0.1);
+}
+
+/* Grouped entries */
+.entry-group {
+  margin-bottom: 6px;
+  animation: fadeSlideIn 0.3s ease;
+}
+.entry-group-header {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all var(--transition);
+  cursor: pointer;
+}
+.entry-group-header:hover {
+  border-color: rgba(79,140,255,0.3);
+  box-shadow: var(--shadow-sm);
+}
+.entry-group-count {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.entry-group-sub {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.3s ease;
+}
+.entry-group-sub.open {
+  max-height: 2000px;
+}
+.entry-group-sub .entry {
+  margin-left: 24px;
+  margin-top: 4px;
+  background: var(--bg-secondary);
+  border-color: var(--border);
+}
+.entry-group-sub .entry:first-child {
+  margin-top: 6px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 500px) {
+  .timer-bar-row { flex-direction: column; }
+  .project-select-wrap { width: 100%; }
+  .start-btn { width: 100%; }
+  .timer-time { font-size: 2.5rem; }
+  .entry { flex-wrap: wrap; gap: 8px; }
+  .entry-times { order: 3; width: 100%; text-align: left; display: flex; gap: 12px; align-items: center; }
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--border);
+}
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all var(--transition);
+}
+.tab-btn:hover { color: var(--text-secondary); }
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeSlideIn 0.3s ease; }
+
+/* Stats */
+.stats-project {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.stats-project-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.stats-project-header:hover { background: rgba(79,140,255,0.05); }
+.stats-project-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.stats-project-name {
+  font-size: 1rem;
+  font-weight: 600;
+  flex: 1;
+}
+.stats-project-time {
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+.stats-project-body {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.3s ease;
+}
+.stats-project-body.open { max-height: 3000px; }
+.stats-task-list {
+  padding: 0 20px 16px;
+  border-top: 1px solid var(--border);
+}
+.stats-task {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(42,53,80,0.5);
+}
+.stats-task:last-child { border-bottom: none; }
+.stats-task-name {
+  flex: 1;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stats-task-sessions {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.stats-task-duration {
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  min-width: 70px;
+  text-align: right;
+}
+.stats-task-pct {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  min-width: 44px;
+  text-align: right;
+}
+.stats-bar-wrap {
+  width: 60px;
+  height: 6px;
+  background: var(--bg-input);
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.stats-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+.stats-total-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-input);
+  border-radius: 4px;
+  margin: 12px 20px 16px;
+  overflow: hidden;
+  display: flex;
+}
+.stats-total-bar-seg {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+.stats-summary {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.stats-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 20px;
+  flex: 1;
+  min-width: 120px;
+}
+.stats-card-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.stats-card-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="app-header">
+    <h1>Time Tracker</h1>
+  </div>
+
+  <div class="timer-bar">
+    <div class="timer-bar-row">
+      <input type="text" class="task-input" id="taskInput" placeholder="Bạn đang làm gì?">
+      <div class="project-select-wrap">
+        <button class="project-select-btn" id="projectBtn" type="button">
+          <span class="project-dot" id="projectDot"></span>
+          <span id="projectLabel">Dự án</span>
+          <span style="margin-left:auto;font-size:0.7rem;color:var(--text-muted)">&#9662;</span>
+        </button>
+        <div class="project-dropdown" id="projectDropdown"></div>
+      </div>
+      <button class="start-btn" id="startBtn">Bắt đầu</button>
+    </div>
+    <div class="controls-row">
+      <div class="sound-btns">
+        <button class="sound-btn" data-sound="none">Im lặng</button>
+        <button class="sound-btn" data-sound="tick">&#128368; Đồng hồ</button>
+        <button class="sound-btn" data-sound="fire">&#128293; Lửa</button>
+      </div>
+      <div class="volume-wrap">
+        <label>&#128266;</label>
+        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50">
+      </div>
+    </div>
+  </div>
+
+  <div class="timer-display" id="timerDisplay">
+    <div class="timer-time" id="timerTime">00:00:00</div>
+    <div class="timer-task-label" id="timerTaskLabel"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="tracker">Theo dõi</button>
+    <button class="tab-btn" data-tab="stats">Thống kê</button>
+  </div>
+
+  <div class="tab-content active" id="tab-tracker">
+    <div class="entries-section" id="entriesSection"></div>
+  </div>
+
+  <div class="tab-content" id="tab-stats">
+    <div id="statsSection"></div>
+  </div>
+</div>
+
+<script>
+// ========== State ==========
+const LS_ENTRIES = 'tt_entries';
+const LS_PROJECTS = 'tt_projects';
+const LS_SOUND = 'tt_sound';
+const LS_VOLUME = 'tt_volume';
+
+const DEFAULT_PROJECTS = [
+  { id: 'p1', name: 'Công việc', color: '#4f8cff' },
+  { id: 'p2', name: 'Cá nhân', color: '#2ed573' },
+  { id: 'p3', name: 'Học tập', color: '#ffa502' },
+  { id: 'p4', name: 'Thiết kế', color: '#a78bfa' },
+  { id: 'p5', name: 'Khác', color: '#ff6b81' },
+];
+
+let projects = JSON.parse(localStorage.getItem(LS_PROJECTS)) || DEFAULT_PROJECTS;
+let entries = JSON.parse(localStorage.getItem(LS_ENTRIES)) || [];
+let selectedProject = projects[0];
+let timerRunning = false;
+let timerStart = null;
+let timerInterval = null;
+let selectedSound = localStorage.getItem(LS_SOUND) || 'none';
+let volume = parseInt(localStorage.getItem(LS_VOLUME) || '50') / 100;
+
+function saveProjects() { localStorage.setItem(LS_PROJECTS, JSON.stringify(projects)); }
+function saveEntries() { localStorage.setItem(LS_ENTRIES, JSON.stringify(entries)); }
+function saveSound() { localStorage.setItem(LS_SOUND, selectedSound); }
+function saveVolume() { localStorage.setItem(LS_VOLUME, String(Math.round(volume * 100))); }
+
+// ========== DOM refs ==========
+const taskInput = document.getElementById('taskInput');
+const projectBtn = document.getElementById('projectBtn');
+const projectDot = document.getElementById('projectDot');
+const projectLabel = document.getElementById('projectLabel');
+const projectDropdown = document.getElementById('projectDropdown');
+const startBtn = document.getElementById('startBtn');
+const timerDisplay = document.getElementById('timerDisplay');
+const timerTime = document.getElementById('timerTime');
+const timerTaskLabel = document.getElementById('timerTaskLabel');
+const entriesSection = document.getElementById('entriesSection');
+const volumeSlider = document.getElementById('volumeSlider');
+
+// ========== Projects ==========
+function renderProjectBtn() {
+  projectDot.style.background = selectedProject.color;
+  projectLabel.textContent = selectedProject.name;
+}
+
+function renderProjectDropdown() {
+  let html = '';
+  projects.forEach(p => {
+    html += `<div class="project-option" data-id="${p.id}">
+      <span class="project-dot" style="background:${p.color}"></span>
+      ${esc(p.name)}
+    </div>`;
+  });
+  html += `<div class="project-add-row">
+    <input type="text" id="newProjectName" placeholder="Dự án mới">
+    <input type="color" id="newProjectColor" value="#ff9ff3">
+    <button onclick="addProject()">+</button>
+  </div>`;
+  projectDropdown.innerHTML = html;
+
+  projectDropdown.querySelectorAll('.project-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      const p = projects.find(x => x.id === opt.dataset.id);
+      if (p) { selectedProject = p; renderProjectBtn(); }
+      projectDropdown.classList.remove('open');
+    });
+  });
+}
+
+function addProject() {
+  const nameEl = document.getElementById('newProjectName');
+  const colorEl = document.getElementById('newProjectColor');
+  const name = nameEl.value.trim();
+  if (!name) return;
+  const p = { id: 'p' + Date.now(), name, color: colorEl.value };
+  projects.push(p);
+  saveProjects();
+  selectedProject = p;
+  renderProjectBtn();
+  renderProjectDropdown();
+  projectDropdown.classList.remove('open');
+}
+
+projectBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  renderProjectDropdown();
+  projectDropdown.classList.toggle('open');
+});
+document.addEventListener('click', () => projectDropdown.classList.remove('open'));
+projectDropdown.addEventListener('click', e => e.stopPropagation());
+
+renderProjectBtn();
+
+// ========== Sound controls ==========
+const soundBtns = document.querySelectorAll('.sound-btn');
+function updateSoundBtns() {
+  soundBtns.forEach(b => b.classList.toggle('active', b.dataset.sound === selectedSound));
+}
+soundBtns.forEach(b => {
+  b.addEventListener('click', () => {
+    selectedSound = b.dataset.sound;
+    saveSound();
+    updateSoundBtns();
+    if (timerRunning) { stopAllSounds(); startSound(); }
+  });
+});
+updateSoundBtns();
+
+volumeSlider.value = Math.round(volume * 100);
+volumeSlider.addEventListener('input', () => {
+  volume = parseInt(volumeSlider.value) / 100;
+  saveVolume();
+  if (gainNode) gainNode.gain.setTargetAtTime(volume, audioCtx.currentTime, 0.05);
+});
+
+// ========== Web Audio ==========
+let audioCtx = null;
+let gainNode = null;
+let tickInterval = null;
+let fireNodes = [];
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = volume;
+    gainNode.connect(audioCtx.destination);
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function stopAllSounds() {
+  if (tickInterval) { clearInterval(tickInterval); tickInterval = null; }
+  fireNodes.forEach(n => { try { n.stop(); } catch(e){} try { n.disconnect(); } catch(e){} });
+  fireNodes = [];
+}
+
+function startSound() {
+  if (selectedSound === 'none') return;
+  const ctx = getAudioCtx();
+  gainNode.gain.setTargetAtTime(volume, ctx.currentTime, 0.02);
+
+  if (selectedSound === 'tick') {
+    playTick();
+    tickInterval = setInterval(playTick, 1000);
+  } else if (selectedSound === 'fire') {
+    startFireplace();
+  }
+}
+
+function playTick() {
+  const ctx = getAudioCtx();
+  const t = ctx.currentTime;
+
+  // Create a short metallic click using filtered noise + oscillator
+  const bufferSize = ctx.sampleRate * 0.012;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    const env = Math.exp(-i / (bufferSize * 0.08));
+    data[i] = (Math.random() * 2 - 1) * env;
+  }
+
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+
+  const hp = ctx.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.value = 3000;
+  hp.Q.value = 2;
+
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 4500;
+  bp.Q.value = 5;
+
+  const tickGain = ctx.createGain();
+  tickGain.gain.setValueAtTime(0.7, t);
+  tickGain.gain.exponentialRampToValueAtTime(0.001, t + 0.015);
+
+  noise.connect(hp).connect(bp).connect(tickGain).connect(gainNode);
+  noise.start(t);
+  noise.stop(t + 0.02);
+
+  // Add a tiny tonal ping
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(6000, t);
+  osc.frequency.exponentialRampToValueAtTime(2000, t + 0.008);
+  const oscGain = ctx.createGain();
+  oscGain.gain.setValueAtTime(0.15, t);
+  oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.01);
+  osc.connect(oscGain).connect(gainNode);
+  osc.start(t);
+  osc.stop(t + 0.015);
+}
+
+function startFireplace() {
+  const ctx = getAudioCtx();
+
+  // Brown noise base
+  const bufferSize = 2 * ctx.sampleRate;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < bufferSize; i++) {
+    const white = Math.random() * 2 - 1;
+    last = (last + (0.02 * white)) / 1.02;
+    data[i] = last * 3.5;
+  }
+
+  const brownSource = ctx.createBufferSource();
+  brownSource.buffer = buffer;
+  brownSource.loop = true;
+
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 400;
+  lp.Q.value = 0.5;
+
+  const fireGain = ctx.createGain();
+  fireGain.gain.value = 0.6;
+
+  brownSource.connect(lp).connect(fireGain).connect(gainNode);
+  brownSource.start();
+  fireNodes.push(brownSource);
+
+  // Random crackle pops
+  function scheduleCrackle() {
+    if (!timerRunning) return;
+    const delay = 80 + Math.random() * 400;
+    setTimeout(() => {
+      if (!timerRunning) return;
+      playCrackle();
+      scheduleCrackle();
+    }, delay);
+  }
+  scheduleCrackle();
+}
+
+function playCrackle() {
+  const ctx = getAudioCtx();
+  const t = ctx.currentTime;
+  const dur = 0.01 + Math.random() * 0.03;
+  const len = Math.floor(ctx.sampleRate * dur);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) {
+    const env = Math.exp(-i / (len * 0.15));
+    d[i] = (Math.random() * 2 - 1) * env;
+  }
+
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 800 + Math.random() * 3000;
+  bp.Q.value = 1 + Math.random() * 3;
+
+  const cGain = ctx.createGain();
+  const amp = 0.2 + Math.random() * 0.6;
+  cGain.gain.setValueAtTime(amp, t);
+  cGain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+
+  src.connect(bp).connect(cGain).connect(gainNode);
+  src.start(t);
+  src.stop(t + dur + 0.01);
+}
+
+// ========== Timer ==========
+function formatDuration(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const h = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+  const m = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+  const s = String(totalSec % 60).padStart(2, '0');
+  return `${h}:${m}:${s}`;
+}
+
+function formatTime(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (d.toDateString() === today.toDateString()) return 'Hôm nay';
+  if (d.toDateString() === yesterday.toDateString()) return 'Hôm qua';
+
+  const days = ['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];
+  return `${days[d.getDay()]}, ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+}
+
+function updateTimer() {
+  if (!timerRunning || !timerStart) return;
+  const elapsed = Date.now() - timerStart;
+  timerTime.textContent = formatDuration(elapsed);
+}
+
+startBtn.addEventListener('click', () => {
+  if (!timerRunning) {
+    // Start
+    timerRunning = true;
+    timerStart = Date.now();
+    startBtn.textContent = 'Dừng lại';
+    startBtn.classList.add('running');
+    timerDisplay.classList.add('visible');
+    const task = taskInput.value.trim() || 'Không có tên';
+    timerTaskLabel.textContent = `${task} — ${selectedProject.name}`;
+    timerInterval = setInterval(updateTimer, 200);
+    updateTimer();
+    startSound();
+  } else {
+    // Stop
+    const end = Date.now();
+    const duration = end - timerStart;
+    const task = taskInput.value.trim() || 'Không có tên';
+    const entry = {
+      id: 'e' + Date.now(),
+      task,
+      projectId: selectedProject.id,
+      projectName: selectedProject.name,
+      projectColor: selectedProject.color,
+      start: new Date(timerStart).toISOString(),
+      end: new Date(end).toISOString(),
+      duration
+    };
+    entries.unshift(entry);
+    saveEntries();
+
+    timerRunning = false;
+    timerStart = null;
+    clearInterval(timerInterval);
+    timerInterval = null;
+    startBtn.textContent = 'Bắt đầu';
+    startBtn.classList.remove('running');
+    timerDisplay.classList.remove('visible');
+    timerTime.textContent = '00:00:00';
+    taskInput.value = '';
+    stopAllSounds();
+    renderEntries();
+  }
+});
+
+// ========== Entries ==========
+function deleteEntry(id) {
+  entries = entries.filter(e => e.id !== id);
+  saveEntries();
+  renderEntries();
+}
+
+function continueEntry(task, projectId) {
+  // If timer is running, stop it first
+  if (timerRunning) {
+    startBtn.click();
+  }
+  // Set task and project, then start
+  taskInput.value = task;
+  const proj = projects.find(p => p.id === projectId);
+  if (proj) {
+    selectedProject = proj;
+    renderProjectBtn();
+  }
+  startBtn.click();
+}
+
+function toggleGroup(groupId) {
+  const el = document.getElementById(groupId);
+  if (el) el.classList.toggle('open');
+}
+
+function renderEntries() {
+  if (entries.length === 0) {
+    entriesSection.innerHTML = '<div class="empty-state">Chưa có mục nào. Bắt đầu theo dõi thời gian!</div>';
+    return;
+  }
+
+  // Group by date
+  const dateGroups = {};
+  entries.forEach(e => {
+    const dateKey = new Date(e.start).toDateString();
+    if (!dateGroups[dateKey]) dateGroups[dateKey] = [];
+    dateGroups[dateKey].push(e);
+  });
+
+  let html = '';
+  Object.keys(dateGroups).forEach(dateKey => {
+    const dayEntries = dateGroups[dateKey];
+    const totalMs = dayEntries.reduce((sum, e) => sum + e.duration, 0);
+
+    html += `<div class="day-group">
+      <div class="day-header">
+        <span class="day-header-date">${formatDate(dayEntries[0].start)}</span>
+        <span class="day-header-total">${formatDuration(totalMs)}</span>
+      </div>`;
+
+    // Sub-group by task+project within same day
+    const taskGroups = {};
+    const taskGroupOrder = [];
+    dayEntries.forEach(e => {
+      const key = `${e.task}|||${e.projectId}`;
+      if (!taskGroups[key]) {
+        taskGroups[key] = [];
+        taskGroupOrder.push(key);
+      }
+      taskGroups[key].push(e);
+    });
+
+    taskGroupOrder.forEach(key => {
+      const group = taskGroups[key];
+      const first = group[0];
+      const groupTotalMs = group.reduce((sum, e) => sum + e.duration, 0);
+      const groupId = 'g_' + first.id;
+
+      if (group.length === 1) {
+        // Single entry — no grouping needed
+        const e = first;
+        html += `<div class="entry">
+          <span class="entry-project-dot" style="background:${e.projectColor}"></span>
+          <div class="entry-info">
+            <div class="entry-task">${esc(e.task)}</div>
+            <div class="entry-project-name">${esc(e.projectName)}</div>
+          </div>
+          <div class="entry-times">
+            <div class="entry-duration">${formatDuration(e.duration)}</div>
+            <div class="entry-range">${formatTime(e.start)} – ${formatTime(e.end)}</div>
+          </div>
+          <div class="entry-actions">
+            <button class="entry-play" onclick="continueEntry('${esc(e.task).replace(/'/g, "\\'")}','${e.projectId}')" title="Tiếp tục">&#9654;</button>
+            <button class="entry-delete" onclick="deleteEntry('${e.id}')" title="Xóa">&#10005;</button>
+          </div>
+        </div>`;
+      } else {
+        // Grouped entries — show combined header + expandable sub-entries
+        const earliest = group[group.length - 1];
+        const latest = group[0];
+        html += `<div class="entry-group">
+          <div class="entry-group-header" onclick="toggleGroup('${groupId}')">
+            <span class="entry-project-dot" style="background:${first.projectColor}"></span>
+            <div class="entry-info">
+              <div class="entry-task">${esc(first.task)}</div>
+              <div class="entry-project-name">${esc(first.projectName)}</div>
+            </div>
+            <span class="entry-group-count">${group.length}</span>
+            <div class="entry-times">
+              <div class="entry-duration">${formatDuration(groupTotalMs)}</div>
+              <div class="entry-range">${formatTime(earliest.start)} – ${formatTime(latest.end)}</div>
+            </div>
+            <div class="entry-actions">
+              <button class="entry-play" onclick="event.stopPropagation();continueEntry('${esc(first.task).replace(/'/g, "\\'")}','${first.projectId}')" title="Tiếp tục">&#9654;</button>
+            </div>
+          </div>
+          <div class="entry-group-sub" id="${groupId}">`;
+
+        group.forEach(e => {
+          html += `<div class="entry">
+            <span class="entry-project-dot" style="background:${e.projectColor}"></span>
+            <div class="entry-info">
+              <div class="entry-task">${esc(e.task)}</div>
+              <div class="entry-project-name">${esc(e.projectName)}</div>
+            </div>
+            <div class="entry-times">
+              <div class="entry-duration">${formatDuration(e.duration)}</div>
+              <div class="entry-range">${formatTime(e.start)} – ${formatTime(e.end)}</div>
+            </div>
+            <div class="entry-actions">
+              <button class="entry-delete" onclick="deleteEntry('${e.id}')" title="Xóa">&#10005;</button>
+            </div>
+          </div>`;
+        });
+
+        html += '</div></div>';
+      }
+    });
+
+    html += '</div>';
+  });
+
+  entriesSection.innerHTML = html;
+}
+
+function esc(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+renderEntries();
+
+// ========== Tabs ==========
+const tabBtns = document.querySelectorAll('.tab-btn');
+tabBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    tabBtns.forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'stats') renderStats();
+  });
+});
+
+// ========== Stats ==========
+const statsSection = document.getElementById('statsSection');
+
+function toggleStats(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('open');
+}
+
+function renderStats() {
+  if (entries.length === 0) {
+    statsSection.innerHTML = '<div class="empty-state">Chưa có dữ liệu thống kê.</div>';
+    return;
+  }
+
+  // Compute totals
+  const totalAllMs = entries.reduce((s, e) => s + e.duration, 0);
+  const projectMap = {};
+
+  entries.forEach(e => {
+    if (!projectMap[e.projectId]) {
+      projectMap[e.projectId] = {
+        name: e.projectName,
+        color: e.projectColor,
+        totalMs: 0,
+        tasks: {}
+      };
+    }
+    const pm = projectMap[e.projectId];
+    pm.totalMs += e.duration;
+    if (!pm.tasks[e.task]) {
+      pm.tasks[e.task] = { totalMs: 0, count: 0 };
+    }
+    pm.tasks[e.task].totalMs += e.duration;
+    pm.tasks[e.task].count += 1;
+  });
+
+  // Sort projects by total time desc
+  const sortedProjects = Object.entries(projectMap).sort((a, b) => b[1].totalMs - a[1].totalMs);
+
+  let html = '';
+
+  // Summary cards
+  html += '<div class="stats-summary">';
+  html += `<div class="stats-card">
+    <div class="stats-card-label">Tổng thời gian</div>
+    <div class="stats-card-value">${formatDuration(totalAllMs)}</div>
+  </div>`;
+  html += `<div class="stats-card">
+    <div class="stats-card-label">Số dự án</div>
+    <div class="stats-card-value">${sortedProjects.length}</div>
+  </div>`;
+  html += `<div class="stats-card">
+    <div class="stats-card-label">Số phiên</div>
+    <div class="stats-card-value">${entries.length}</div>
+  </div>`;
+  html += '</div>';
+
+  // Overall bar showing project proportions
+  html += '<div class="stats-total-bar">';
+  sortedProjects.forEach(([, p]) => {
+    const pct = totalAllMs > 0 ? (p.totalMs / totalAllMs * 100) : 0;
+    html += `<div class="stats-total-bar-seg" style="width:${pct}%;background:${p.color}" title="${p.name}: ${pct.toFixed(1)}%"></div>`;
+  });
+  html += '</div>';
+
+  // Per project
+  sortedProjects.forEach(([pid, p]) => {
+    const projPct = totalAllMs > 0 ? (p.totalMs / totalAllMs * 100) : 0;
+    const statsId = 'stats_' + pid;
+
+    // Sort tasks by time desc
+    const sortedTasks = Object.entries(p.tasks).sort((a, b) => b[1].totalMs - a[1].totalMs);
+
+    html += `<div class="stats-project">
+      <div class="stats-project-header" onclick="toggleStats('${statsId}')">
+        <span class="stats-project-dot" style="background:${p.color}"></span>
+        <span class="stats-project-name">${esc(p.name)}</span>
+        <span class="stats-task-pct" style="font-size:0.85rem">${projPct.toFixed(1)}%</span>
+        <span class="stats-project-time">${formatDuration(p.totalMs)}</span>
+      </div>
+      <div class="stats-project-body" id="${statsId}">
+        <div class="stats-task-list">`;
+
+    sortedTasks.forEach(([taskName, t]) => {
+      const taskPct = p.totalMs > 0 ? (t.totalMs / p.totalMs * 100) : 0;
+      html += `<div class="stats-task">
+        <span class="stats-task-name">${esc(taskName)}</span>
+        <span class="stats-task-sessions">${t.count} phiên</span>
+        <div class="stats-bar-wrap">
+          <div class="stats-bar" style="width:${taskPct}%;background:${p.color}"></div>
+        </div>
+        <span class="stats-task-duration">${formatDuration(t.totalMs)}</span>
+        <span class="stats-task-pct">${taskPct.toFixed(1)}%</span>
+      </div>`;
+    });
+
+    html += '</div></div></div>';
+  });
+
+  statsSection.innerHTML = html;
+}
+</script>
+</body>
+</html>
