@@ -102,7 +102,7 @@ body {
 .task-input::placeholder { color: var(--text-muted); }
 
 /* Project selector */
-.project-select-wrap { position: relative; min-width: 140px; }
+.project-select-wrap { position: relative; min-width: 200px; flex-shrink: 0; }
 .project-select-btn {
   display: flex; align-items: center; gap: 8px;
   background: var(--bg-input);
@@ -116,11 +116,13 @@ body {
 }
 .project-select-btn:hover { border-color: var(--accent); }
 .project-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.project-emoji { font-size: 1rem; flex-shrink: 0; line-height: 1; }
 .project-dropdown {
   position: absolute; top: calc(100% + 4px); left: 0; right: 0;
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: var(--radius-sm); box-shadow: var(--shadow);
-  z-index: 100; display: none; max-height: 260px; overflow-y: auto;
+  z-index: 100; display: none; max-height: 300px; overflow-y: auto;
+  min-width: 220px;
 }
 .project-dropdown.open { display: block; animation: fadeSlideIn 0.15s ease; }
 .project-option {
@@ -129,25 +131,35 @@ body {
   transition: background var(--transition);
 }
 .project-option:hover { background: rgba(79,140,255,0.1); }
-.project-add-row {
-  display: flex; align-items: center; gap: 6px;
-  padding: 10px 14px; border-top: 1px solid var(--border);
+.project-add-form {
+  border-top: 1px solid var(--border);
+  padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 8px;
 }
-.project-add-row input[type="text"] {
-  flex: 1; background: var(--bg-input); border: 1px solid var(--border);
-  border-radius: 6px; padding: 6px 10px; color: var(--text-primary);
+.project-add-form input[type="text"] {
+  width: 100%; background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: 6px; padding: 7px 10px; color: var(--text-primary);
   font-size: 0.85rem; outline: none;
 }
-.project-add-row input[type="color"] {
-  width: 28px; height: 28px; border: none; border-radius: 6px;
-  cursor: pointer; background: none; padding: 0;
+.project-add-form input[type="text"]:focus { border-color: var(--accent); }
+.project-add-controls {
+  display: flex; align-items: center; gap: 6px;
 }
-.project-add-row button {
+.project-add-controls input[type="color"] {
+  width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 6px;
+  cursor: pointer; background: none; padding: 2px; flex-shrink: 0;
+}
+.emoji-input {
+  flex: 1; background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: 6px; padding: 6px 10px; color: var(--text-primary);
+  font-size: 1rem; outline: none; text-align: center; width: 52px; flex-shrink: 0;
+}
+.project-add-form button {
   background: var(--accent); color: #fff; border: none; border-radius: 6px;
-  padding: 6px 10px; font-size: 0.8rem; cursor: pointer; font-weight: 600;
-  transition: background var(--transition);
+  padding: 7px 12px; font-size: 0.82rem; cursor: pointer; font-weight: 600;
+  transition: background var(--transition); flex-shrink: 0;
 }
-.project-add-row button:hover { background: var(--accent-hover); }
+.project-add-form button:hover { background: var(--accent-hover); }
 
 /* Sound controls */
 .controls-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
@@ -170,7 +182,8 @@ body {
   border-radius: 50%; background: var(--accent); cursor: pointer;
 }
 
-/* Start/Stop button */
+/* Start/Stop/Pause buttons */
+.timer-btns { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
 .start-btn {
   background: var(--accent); color: #fff; border: none;
   border-radius: var(--radius-sm); padding: 10px 24px;
@@ -180,6 +193,22 @@ body {
 .start-btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
 .start-btn.running { background: var(--danger); }
 .start-btn.running:hover { background: var(--danger-hover); }
+.pause-btn {
+  background: var(--bg-input); color: var(--warning); border: 1px solid var(--warning);
+  border-radius: var(--radius-sm); padding: 10px 14px;
+  font-size: 0.95rem; font-weight: 700; cursor: pointer;
+  transition: all var(--transition); white-space: nowrap; display: none;
+  line-height: 1;
+}
+.pause-btn:hover { background: rgba(255,165,2,0.15); transform: translateY(-1px); }
+.pause-btn.paused { background: rgba(255,165,2,0.15); color: var(--warning); border-color: var(--warning); }
+
+/* Timer paused indicator */
+.timer-paused-label {
+  font-size: 0.78rem; color: var(--warning); font-weight: 600;
+  letter-spacing: 0.08em; margin-top: 6px; display: none;
+}
+.timer-paused-label.show { display: block; }
 
 /* Timer display */
 .timer-display {
@@ -458,7 +487,10 @@ body {
         </button>
         <div class="project-dropdown" id="projectDropdown"></div>
       </div>
-      <button class="start-btn" id="startBtn">Bắt đầu</button>
+      <div class="timer-btns">
+        <button class="pause-btn" id="pauseBtn">⏸</button>
+        <button class="start-btn" id="startBtn">Bắt đầu</button>
+      </div>
     </div>
     <div class="controls-row">
       <div class="sound-btns">
@@ -477,6 +509,7 @@ body {
   <div class="timer-display" id="timerDisplay">
     <div class="timer-time" id="timerTime">00:00:00</div>
     <div class="timer-task-label" id="timerTaskLabel"></div>
+    <div class="timer-paused-label" id="timerPausedLabel">⏸ TẠM DỪNG</div>
   </div>
 
   <!-- Tabs -->
@@ -705,19 +738,32 @@ const syncActionBar  = document.getElementById('syncActionBar');
 
 // ========== Projects ==========
 function renderProjectBtn() {
-  projectDot.style.background = selectedProject.color;
+  projectDot.style.background = selectedProject.emoji ? 'transparent' : selectedProject.color;
+  projectDot.style.display = selectedProject.emoji ? 'none' : 'inline-block';
+  // update emoji span
+  let emojiEl = projectBtn.querySelector('.project-emoji');
+  if (selectedProject.emoji) {
+    if (!emojiEl) { emojiEl = document.createElement('span'); emojiEl.className = 'project-emoji'; projectBtn.insertBefore(emojiEl, projectBtn.firstChild); }
+    emojiEl.textContent = selectedProject.emoji;
+  } else {
+    if (emojiEl) emojiEl.remove();
+  }
   projectLabel.textContent = selectedProject.name;
 }
 function renderProjectDropdown() {
-  let html = projects.map(p =>
-    `<div class="project-option" data-id="${p.id}">
-      <span class="project-dot" style="background:${p.color}"></span>${esc(p.name)}
-    </div>`
-  ).join('');
-  html += `<div class="project-add-row">
-    <input type="text" id="newProjectName" placeholder="Dự án mới">
-    <input type="color" id="newProjectColor" value="#ff9ff3">
-    <button onclick="addProject()">+</button>
+  let html = projects.map(p => {
+    const icon = p.emoji
+      ? `<span class="project-emoji">${p.emoji}</span>`
+      : `<span class="project-dot" style="background:${p.color}"></span>`;
+    return `<div class="project-option" data-id="${p.id}">${icon}${esc(p.name)}</div>`;
+  }).join('');
+  html += `<div class="project-add-form">
+    <input type="text" id="newProjectName" placeholder="Tên dự án mới...">
+    <div class="project-add-controls">
+      <input type="color" id="newProjectColor" value="#ff9ff3" title="Màu sắc">
+      <input type="text" class="emoji-input" id="newProjectEmoji" placeholder="😀" maxlength="2" title="Emoji (để trống nếu dùng màu)">
+      <button onclick="addProject()">+ Thêm</button>
+    </div>
   </div>`;
   projectDropdown.innerHTML = html;
   projectDropdown.querySelectorAll('.project-option').forEach(opt => {
@@ -731,9 +777,11 @@ function renderProjectDropdown() {
 function addProject() {
   const nameEl  = document.getElementById('newProjectName');
   const colorEl = document.getElementById('newProjectColor');
+  const emojiEl = document.getElementById('newProjectEmoji');
   const name = nameEl.value.trim();
   if (!name) return;
-  const p = { id: 'p' + Date.now(), name, color: colorEl.value };
+  const emoji = emojiEl.value.trim();
+  const p = { id: 'p' + Date.now(), name, color: colorEl.value, emoji: emoji || '' };
   projects.push(p);
   saveProjects();
   selectedProject = p;
