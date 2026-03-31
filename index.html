@@ -1423,9 +1423,21 @@ function esc(str) {
   return div.innerHTML;
 }
 
+// ========== Auto sync ==========
+function startAutoSync() {
+  setInterval(async () => {
+    if (!anySync()) return;
+    const lastSync = localStorage.getItem(LS.LAST_SYNC);
+    const hasNew = !lastSync || entries.some(e => new Date(e.start) > new Date(lastSync));
+    if (!hasNew) return;
+    await pushToCloud();
+  }, 30 * 60 * 1000);
+}
+
 // ========== Init ==========
 updateSyncBadge();
 renderEntries();
+startAutoSync();
 </script>
 </body>
 </html>
