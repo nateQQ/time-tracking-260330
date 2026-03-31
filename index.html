@@ -836,8 +836,16 @@ function saveProjectEdit(id) {
   p.color = document.getElementById(`editColor_${id}`).value;
   p.emoji = document.getElementById(`editEmoji_${id}`).value.trim();
   saveProjects();
+  entries.forEach(e => {
+    if (e.projectId === id) {
+      e.projectName  = p.name;
+      e.projectColor = p.color;
+    }
+  });
+  saveEntries();
   if (selectedProject.id === id) { selectedProject = p; renderProjectBtn(); }
   renderProjectDropdown();
+  renderEntries();
 }
 function deleteProject(id) {
   if (projects.length <= 1) return;
