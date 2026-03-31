@@ -131,6 +131,33 @@ body {
   transition: background var(--transition);
 }
 .project-option:hover { background: rgba(79,140,255,0.1); }
+.project-option { position: relative; }
+.project-edit-btn {
+  margin-left: auto; background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 0.8rem; padding: 2px 4px; border-radius: 4px;
+  opacity: 0; transition: opacity 0.15s; flex-shrink: 0; line-height: 1;
+}
+.project-option:hover .project-edit-btn { opacity: 1; }
+.project-edit-form {
+  border-top: 1px solid var(--border); padding: 10px 14px;
+  display: flex; flex-direction: column; gap: 8px; background: var(--bg-secondary);
+}
+.project-edit-form input[type="text"] {
+  width: 100%; background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: 6px; padding: 7px 10px; color: var(--text-primary);
+  font-size: 0.85rem; outline: none;
+}
+.project-edit-form input[type="text"]:focus { border-color: var(--accent); }
+.project-edit-actions { display: flex; gap: 6px; align-items: center; }
+.project-edit-actions input[type="color"] {
+  width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 6px;
+  cursor: pointer; background: none; padding: 2px; flex-shrink: 0;
+}
+.project-edit-actions .emoji-input { flex-shrink: 0; width: 48px; }
+.project-edit-actions button { padding: 6px 10px; font-size: 0.8rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; }
+.project-edit-actions .save-btn { background: var(--accent); color: #fff; flex: 1; }
+.project-edit-actions .save-btn:hover { background: var(--accent-hover); }
+.project-edit-actions .del-btn { background: rgba(255,71,87,0.15); color: var(--danger); }
 .project-add-form {
   border-top: 1px solid var(--border);
   padding: 12px 14px;
@@ -755,12 +782,24 @@ function renderProjectBtn() {
   }
   projectLabel.textContent = selectedProject.name;
 }
-function renderProjectDropdown() {
+function renderProjectDropdown(editingId = null) {
   let html = projects.map(p => {
     const icon = p.emoji
       ? `<span class="project-emoji">${p.emoji}</span>`
       : `<span class="project-dot" style="background:${p.color}"></span>`;
-    return `<div class="project-option" data-id="${p.id}">${icon}${esc(p.name)}</div>`;
+    let item = `<div class="project-option" data-id="${p.id}">${icon}${esc(p.name)}<button class="project-edit-btn" data-edit="${p.id}" title="Chỉnh sửa">✏️</button></div>`;
+    if (editingId === p.id) {
+      item += `<div class="project-edit-form" id="editForm_${p.id}">
+        <input type="text" id="editName_${p.id}" value="${esc(p.name)}" placeholder="Tên dự án">
+        <div class="project-edit-actions">
+          <input type="color" id="editColor_${p.id}" value="${p.color || '#4f8cff'}" title="Màu sắc">
+          <input type="text" class="emoji-input" id="editEmoji_${p.id}" value="${p.emoji || ''}" placeholder="😀" maxlength="2" title="Emoji">
+          <button class="save-btn" onclick="saveProjectEdit('${p.id}')">Lưu</button>
+          <button class="del-btn" onclick="deleteProject('${p.id}')">🗑</button>
+        </div>
+      </div>`;
+    }
+    return item;
   }).join('');
   html += `<div class="project-add-form">
     <input type="text" id="newProjectName" placeholder="Tên dự án mới...">
@@ -772,12 +811,40 @@ function renderProjectDropdown() {
   </div>`;
   projectDropdown.innerHTML = html;
   projectDropdown.querySelectorAll('.project-option').forEach(opt => {
-    opt.addEventListener('click', () => {
+    opt.addEventListener('click', e => {
+      if (e.target.closest('.project-edit-btn')) return;
       const p = projects.find(x => x.id === opt.dataset.id);
       if (p) { selectedProject = p; renderProjectBtn(); }
       projectDropdown.classList.remove('open');
     });
   });
+  projectDropdown.querySelectorAll('.project-edit-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = btn.dataset.edit;
+      renderProjectDropdown(editingId === id ? null : id);
+      if (editingId !== id) setTimeout(() => document.getElementById(`editName_${id}`)?.focus(), 0);
+    });
+  });
+}
+function saveProjectEdit(id) {
+  const p = projects.find(x => x.id === id);
+  if (!p) return;
+  const name = document.getElementById(`editName_${id}`).value.trim();
+  if (!name) return;
+  p.name  = name;
+  p.color = document.getElementById(`editColor_${id}`).value;
+  p.emoji = document.getElementById(`editEmoji_${id}`).value.trim();
+  saveProjects();
+  if (selectedProject.id === id) { selectedProject = p; renderProjectBtn(); }
+  renderProjectDropdown();
+}
+function deleteProject(id) {
+  if (projects.length <= 1) return;
+  projects = projects.filter(p => p.id !== id);
+  saveProjects();
+  if (selectedProject.id === id) { selectedProject = projects[0]; renderProjectBtn(); }
+  renderProjectDropdown();
 }
 function addProject() {
   const nameEl  = document.getElementById('newProjectName');
