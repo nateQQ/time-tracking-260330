@@ -710,8 +710,10 @@ const DEFAULT_PROJECTS = [
 let projects = JSON.parse(localStorage.getItem(LS.PROJECTS)) || DEFAULT_PROJECTS;
 let entries  = JSON.parse(localStorage.getItem(LS.ENTRIES))  || [];
 let selectedProject = projects[0];
-let timerRunning = false;
-let timerStart   = null;
+let timerRunning  = false;
+let timerPaused   = false;
+let timerStart    = null;       // timestamp when current run segment started
+let pausedElapsed = 0;          // accumulated ms from previous run segments
 let timerInterval = null;
 let selectedSound = localStorage.getItem(LS.SOUND)  || 'none';
 let volume        = parseInt(localStorage.getItem(LS.VOLUME) || '50') / 100;
@@ -727,10 +729,12 @@ const projectBtn     = document.getElementById('projectBtn');
 const projectDot     = document.getElementById('projectDot');
 const projectLabel   = document.getElementById('projectLabel');
 const projectDropdown = document.getElementById('projectDropdown');
-const startBtn       = document.getElementById('startBtn');
-const timerDisplay   = document.getElementById('timerDisplay');
-const timerTime      = document.getElementById('timerTime');
-const timerTaskLabel = document.getElementById('timerTaskLabel');
+const startBtn        = document.getElementById('startBtn');
+const pauseBtn        = document.getElementById('pauseBtn');
+const timerDisplay    = document.getElementById('timerDisplay');
+const timerTime       = document.getElementById('timerTime');
+const timerTaskLabel  = document.getElementById('timerTaskLabel');
+const timerPausedLabel = document.getElementById('timerPausedLabel');
 const entriesSection = document.getElementById('entriesSection');
 const volumeSlider   = document.getElementById('volumeSlider');
 const syncBadge      = document.getElementById('syncBadge');
@@ -878,7 +882,7 @@ function startFireplace() {
   fireNodes.push(src);
   function scheduleCrackle() {
     if (!timerRunning) return;
-    setTimeout(() => { if (!timerRunning) return; playCrackle(); scheduleCrackle(); }, 80 + Math.random()*400);
+    setTimeout(() => { if (!timerRunning) return; playCrackle(); scheduleCrackle(); }, 80 + Math.random()*500);
   }
   scheduleCrackle();
 }
@@ -914,39 +918,90 @@ function formatDate(dateStr) {
   const days = ['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];
   return `${days[d.getDay()]}, ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
 }
-function updateTimer() {
-  if (!timerRunning || !timerStart) return;
-  timerTime.textContent = formatDuration(Date.now() - timerStart);
+function getElapsed() {
+  return pausedElapsed + (timerStart ? Date.now() - timerStart : 0);
 }
-startBtn.addEventListener('click', () => {
-  if (!timerRunning) {
-    timerRunning = true; timerStart = Date.now();
+function updateTimer() {
+  if (!timerRunning && !timerPaused) return;
+  timerTime.textContent = formatDuration(getElapsed());
+}
+function setTimerUI(state) {
+  // state: 'idle' | 'running' | 'paused'
+  if (state === 'idle') {
+    startBtn.textContent = 'Bắt đầu'; startBtn.classList.remove('running');
+    pauseBtn.style.display = 'none'; pauseBtn.classList.remove('paused');
+    timerDisplay.classList.remove('visible');
+    timerPausedLabel.classList.remove('show');
+    timerTime.textContent = '00:00:00';
+  } else if (state === 'running') {
     startBtn.textContent = 'Dừng lại'; startBtn.classList.add('running');
+    pauseBtn.style.display = 'block'; pauseBtn.classList.remove('paused');
+    pauseBtn.textContent = '⏸';
     timerDisplay.classList.add('visible');
+    timerPausedLabel.classList.remove('show');
+  } else if (state === 'paused') {
+    startBtn.textContent = 'Dừng lại'; startBtn.classList.add('running');
+    pauseBtn.style.display = 'block'; pauseBtn.classList.add('paused');
+    pauseBtn.textContent = '▶';
+    timerPausedLabel.classList.add('show');
+  }
+}
+
+// Track session start for the record
+let sessionStart = null;
+
+startBtn.addEventListener('click', () => {
+  if (!timerRunning && !timerPaused) {
+    // === START ===
+    timerRunning = true; timerPaused = false;
+    timerStart = Date.now(); pausedElapsed = 0;
+    sessionStart = timerStart;
     const task = taskInput.value.trim() || 'Không có tên';
     timerTaskLabel.textContent = `${task} — ${selectedProject.name}`;
     timerInterval = setInterval(updateTimer, 200);
     updateTimer(); startSound();
+    setTimerUI('running');
   } else {
-    const end = Date.now(), duration = end - timerStart;
+    // === STOP (from running or paused) ===
+    const end = Date.now();
+    const duration = getElapsed();
     const task = taskInput.value.trim() || 'Không có tên';
     const entry = {
       id: 'e' + Date.now(), task,
       projectId: selectedProject.id,
       projectName: selectedProject.name,
       projectColor: selectedProject.color,
-      start: new Date(timerStart).toISOString(),
+      start: new Date(sessionStart).toISOString(),
       end: new Date(end).toISOString(),
       duration
     };
     entries.unshift(entry); saveEntries();
-    timerRunning = false; timerStart = null;
+    timerRunning = false; timerPaused = false;
+    timerStart = null; pausedElapsed = 0; sessionStart = null;
     clearInterval(timerInterval); timerInterval = null;
-    startBtn.textContent = 'Bắt đầu'; startBtn.classList.remove('running');
-    timerDisplay.classList.remove('visible'); timerTime.textContent = '00:00:00';
     taskInput.value = ''; stopAllSounds();
+    setTimerUI('idle');
     renderEntries();
-    syncEntry(entry);  // auto-sync new entry
+    syncEntry(entry);
+  }
+});
+
+pauseBtn.addEventListener('click', () => {
+  if (timerRunning && !timerPaused) {
+    // === PAUSE ===
+    pausedElapsed += Date.now() - timerStart;
+    timerStart = null;
+    timerRunning = false; timerPaused = true;
+    clearInterval(timerInterval); timerInterval = null;
+    stopAllSounds();
+    setTimerUI('paused');
+  } else if (timerPaused) {
+    // === RESUME ===
+    timerStart = Date.now();
+    timerRunning = true; timerPaused = false;
+    timerInterval = setInterval(updateTimer, 200);
+    updateTimer(); startSound();
+    setTimerUI('running');
   }
 });
 
@@ -957,7 +1012,8 @@ function deleteEntry(id) {
   syncDelete(id);
 }
 function continueEntry(task, projectId) {
-  if (timerRunning) startBtn.click();
+  // Stop current timer if active
+  if (timerRunning || timerPaused) startBtn.click();
   taskInput.value = task;
   const proj = projects.find(p => p.id === projectId);
   if (proj) { selectedProject = proj; renderProjectBtn(); }
