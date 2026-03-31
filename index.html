@@ -923,7 +923,10 @@ function getElapsed() {
 }
 function updateTimer() {
   if (!timerRunning && !timerPaused) return;
-  timerTime.textContent = formatDuration(getElapsed());
+  const elapsed = getElapsed();
+  timerTime.textContent = formatDuration(elapsed);
+  const icon = timerPaused ? '⏸' : '⏱';
+  document.title = `${icon} ${formatDuration(elapsed)} · ${selectedProject.name}`;
 }
 function setTimerUI(state) {
   // state: 'idle' | 'running' | 'paused'
@@ -980,6 +983,7 @@ startBtn.addEventListener('click', () => {
     timerStart = null; pausedElapsed = 0; sessionStart = null;
     clearInterval(timerInterval); timerInterval = null;
     taskInput.value = ''; stopAllSounds();
+    document.title = 'Time Tracking';
     setTimerUI('idle');
     renderEntries();
     syncEntry(entry);
@@ -1423,9 +1427,21 @@ function esc(str) {
   return div.innerHTML;
 }
 
+// ========== Auto sync ==========
+function startAutoSync() {
+  setInterval(async () => {
+    if (!anySync()) return;
+    const lastSync = localStorage.getItem(LS.LAST_SYNC);
+    const hasNew = !lastSync || entries.some(e => new Date(e.start) > new Date(lastSync));
+    if (!hasNew) return;
+    await pushToCloud();
+  }, 30 * 60 * 1000);
+}
+
 // ========== Init ==========
 updateSyncBadge();
 renderEntries();
+startAutoSync();
 </script>
 </body>
 </html>
