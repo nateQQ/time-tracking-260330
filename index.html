@@ -271,6 +271,13 @@ body {
   letter-spacing: 0.04em; color: var(--text-primary);
   text-shadow: 0 0 48px rgba(21,133,231,0.4);
 }
+.t-hh, .t-ss { color: var(--text-muted); font-size: 0.75em; }
+.t-mm {
+  color: #fff;
+  font-size: 1.15em;
+  text-shadow: 0 0 32px rgba(21,133,231,0.8), 0 0 8px rgba(21,133,231,0.5);
+}
+.t-sep { color: var(--text-muted); font-size: 0.8em; margin: 0 1px; }
 .timer-task-label { font-size: 0.95rem; color: var(--text-secondary); margin-top: 4px; }
 
 /* Tabs */
@@ -1026,10 +1033,17 @@ function formatDate(dateStr) {
 function getElapsed() {
   return pausedElapsed + (timerStart ? Date.now() - timerStart : 0);
 }
+function timerHTML(ms) {
+  const s = Math.floor(ms/1000);
+  const hh = String(Math.floor(s/3600)).padStart(2,'0');
+  const mm = String(Math.floor((s%3600)/60)).padStart(2,'0');
+  const ss = String(s%60).padStart(2,'0');
+  return `<span class="t-hh">${hh}</span><span class="t-sep">:</span><span class="t-mm">${mm}</span><span class="t-sep">:</span><span class="t-ss">${ss}</span>`;
+}
 function updateTimer() {
   if (!timerRunning && !timerPaused) return;
   const elapsed = getElapsed();
-  timerTime.textContent = formatDuration(elapsed);
+  timerTime.innerHTML = timerHTML(elapsed);
   const icon = timerPaused ? '⏸' : '⏱';
   document.title = `${icon} ${formatDuration(elapsed)} · ${selectedProject.name}`;
 }
@@ -1040,7 +1054,7 @@ function setTimerUI(state) {
     pauseBtn.style.display = 'none'; pauseBtn.classList.remove('paused');
     timerDisplay.classList.remove('visible');
     timerPausedLabel.classList.remove('show');
-    timerTime.textContent = '00:00:00';
+    timerTime.innerHTML = '<span class="t-hh">00</span><span class="t-sep">:</span><span class="t-mm">00</span><span class="t-sep">:</span><span class="t-ss">00</span>';
   } else if (state === 'running') {
     startBtn.textContent = 'Dừng lại'; startBtn.classList.add('running');
     pauseBtn.style.display = 'block'; pauseBtn.classList.remove('paused');
