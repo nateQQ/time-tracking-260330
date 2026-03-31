@@ -923,7 +923,10 @@ function getElapsed() {
 }
 function updateTimer() {
   if (!timerRunning && !timerPaused) return;
-  timerTime.textContent = formatDuration(getElapsed());
+  const elapsed = getElapsed();
+  timerTime.textContent = formatDuration(elapsed);
+  const icon = timerPaused ? '⏸' : '⏱';
+  document.title = `${icon} ${formatDuration(elapsed)} · ${selectedProject.name}`;
 }
 function setTimerUI(state) {
   // state: 'idle' | 'running' | 'paused'
@@ -980,6 +983,7 @@ startBtn.addEventListener('click', () => {
     timerStart = null; pausedElapsed = 0; sessionStart = null;
     clearInterval(timerInterval); timerInterval = null;
     taskInput.value = ''; stopAllSounds();
+    document.title = 'Time Tracking';
     setTimerUI('idle');
     renderEntries();
     syncEntry(entry);
