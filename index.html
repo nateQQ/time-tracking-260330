@@ -697,6 +697,7 @@ const LS = {
   SHEETS_URL: 'tt_gs_url',
   SHEETS_ON: 'tt_gs_on',
   LAST_SYNC: 'tt_last_sync',
+  TIMER_STATE: 'tt_timer_state',
 };
 
 const DEFAULT_PROJECTS = [
@@ -953,6 +954,48 @@ function setTimerUI(state) {
 // Track session start for the record
 let sessionStart = null;
 
+function saveTimerState() {
+  if (timerRunning || timerPaused) {
+    localStorage.setItem(LS.TIMER_STATE, JSON.stringify({
+      running: timerRunning,
+      paused: timerPaused,
+      timerStart,
+      pausedElapsed,
+      sessionStart,
+      task: taskInput.value.trim() || 'Không có tên',
+      projectId: selectedProject.id,
+    }));
+  } else {
+    localStorage.removeItem(LS.TIMER_STATE);
+  }
+}
+
+function restoreTimerState() {
+  const raw = localStorage.getItem(LS.TIMER_STATE);
+  if (!raw) return;
+  try {
+    const s = JSON.parse(raw);
+    const proj = projects.find(p => p.id === s.projectId);
+    if (proj) selectedProject = proj;
+    taskInput.value = s.task === 'Không có tên' ? '' : s.task;
+    sessionStart = s.sessionStart;
+    pausedElapsed = s.pausedElapsed;
+    if (s.running) {
+      timerStart = s.timerStart;
+      timerRunning = true; timerPaused = false;
+    } else {
+      timerStart = null;
+      timerRunning = false; timerPaused = true;
+    }
+    timerTaskLabel.textContent = `${s.task} — ${selectedProject.name}`;
+    timerInterval = setInterval(updateTimer, 200);
+    updateTimer();
+    setTimerUI(s.running ? 'running' : 'paused');
+  } catch(e) {
+    localStorage.removeItem(LS.TIMER_STATE);
+  }
+}
+
 startBtn.addEventListener('click', () => {
   if (!timerRunning && !timerPaused) {
     // === START ===
@@ -964,6 +1007,7 @@ startBtn.addEventListener('click', () => {
     timerInterval = setInterval(updateTimer, 200);
     updateTimer(); startSound();
     setTimerUI('running');
+    saveTimerState();
   } else {
     // === STOP (from running or paused) ===
     const end = Date.now();
@@ -984,6 +1028,7 @@ startBtn.addEventListener('click', () => {
     clearInterval(timerInterval); timerInterval = null;
     taskInput.value = ''; stopAllSounds();
     document.title = 'Time Tracking';
+    localStorage.removeItem(LS.TIMER_STATE);
     setTimerUI('idle');
     renderEntries();
     syncEntry(entry);
@@ -999,6 +1044,7 @@ pauseBtn.addEventListener('click', () => {
     clearInterval(timerInterval); timerInterval = null;
     stopAllSounds();
     setTimerUI('paused');
+    saveTimerState();
   } else if (timerPaused) {
     // === RESUME ===
     timerStart = Date.now();
@@ -1006,6 +1052,7 @@ pauseBtn.addEventListener('click', () => {
     timerInterval = setInterval(updateTimer, 200);
     updateTimer(); startSound();
     setTimerUI('running');
+    saveTimerState();
   }
 });
 
@@ -1441,6 +1488,7 @@ function startAutoSync() {
 // ========== Init ==========
 updateSyncBadge();
 renderEntries();
+restoreTimerState();
 startAutoSync();
 </script>
 </body>
